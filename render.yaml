@@ -9,7 +9,7 @@ services:
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: APP_PASSWORD
-        value: KaitoMilica1
+        sync: false
       - key: SECRET_KEY
         generateValue: true
       - key: PYTHON_VERSION

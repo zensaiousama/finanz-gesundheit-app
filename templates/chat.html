@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
+    <title>Persönlicher Berater</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="mode-tabs">
+                <button class="tab active" data-mode="finance">
+                    <span class="tab-icon">💰</span>
+                    <span class="tab-label">Finanzen</span>
+                </button>
+                <button class="tab" data-mode="health">
+                    <span class="tab-icon">💪</span>
+                    <span class="tab-label">Gesundheit</span>
+                </button>
+            </div>
+            <a href="/logout" class="logout-btn" title="Abmelden">⏻</a>
+        </header>
+
+        <!-- Disclaimer -->
+        <div class="disclaimer">
+            Keine echte Finanz- oder Medizinberatung. Nur zu Informationszwecken.
+        </div>
+
+        <!-- Chat messages -->
+        <div class="chat-area" id="chatArea">
+            <div class="welcome-msg" id="welcomeMsg">
+                <div class="welcome-icon" id="welcomeIcon">💰</div>
+                <h2 id="welcomeTitle">Finanz-Berater</h2>
+                <p id="welcomeText">Frag mich über Investitionen, Value Investing, Portfolioaufbau und Warren Buffetts Philosophie.</p>
+            </div>
+        </div>
+
+        <!-- Input area -->
+        <div class="input-area">
+            <div class="input-wrapper">
+                <textarea id="messageInput" placeholder="Nachricht eingeben..." rows="1"></textarea>
+                <button id="sendBtn" class="send-btn" disabled>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

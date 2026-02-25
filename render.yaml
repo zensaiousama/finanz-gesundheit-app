@@ -2,13 +2,14 @@ services:
   - type: web
     name: finanz-gesundheit-berater
     runtime: python
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
     envVars:
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: APP_PASSWORD
-        sync: false
+        value: KaitoMilica1
       - key: SECRET_KEY
         generateValue: true
       - key: PYTHON_VERSION

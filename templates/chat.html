@@ -10,6 +10,11 @@
     <div class="app">
         <!-- Header -->
         <header class="header">
+            <button class="header-btn" id="menuBtn" title="Gespeicherte Chats">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12h18M3 6h18M3 18h18"/>
+                </svg>
+            </button>
             <div class="mode-tabs">
                 <button class="tab active" data-mode="finance">
                     <span class="tab-icon">💰</span>
@@ -20,13 +25,30 @@
                     <span class="tab-label">Gesundheit</span>
                 </button>
             </div>
-            <a href="/logout" class="logout-btn" title="Abmelden">⏻</a>
+            <button class="header-btn" id="newChatBtn" title="Neuer Chat">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+            </button>
         </header>
 
         <!-- Disclaimer -->
         <div class="disclaimer">
             Keine echte Finanz- oder Medizinberatung. Nur zu Informationszwecken.
         </div>
+
+        <!-- Sidebar -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h3>Gespeicherte Chats</h3>
+                <button class="sidebar-close" id="sidebarClose">&times;</button>
+            </div>
+            <div class="sidebar-list" id="chatList"></div>
+            <div class="sidebar-footer">
+                <a href="/logout" class="sidebar-logout">Abmelden</a>
+            </div>
+        </aside>
 
         <!-- Chat messages -->
         <div class="chat-area" id="chatArea">

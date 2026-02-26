@@ -18,6 +18,7 @@ app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(32))
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["PERMANENT_SESSION_LIFETIME"] = 86400  # 24h
+app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10MB max upload
 
 limiter = Limiter(get_remote_address, app=app, default_limits=["200 per day"])
 
@@ -160,19 +161,45 @@ def api_chat():
 
     mode = data.get("mode", "finance")
     history = data.get("history", [])
+    image = data.get("image")  # {data: base64, media_type: "image/..."}
 
     system_prompt = FINANCE_SYSTEM_PROMPT if mode == "finance" else HEALTH_SYSTEM_PROMPT
 
     # Build messages from history + current message
     messages = []
     for msg in history[-20:]:  # Keep last 20 messages for context
-        messages.append({"role": msg["role"], "content": msg["content"]})
-    messages.append({"role": "user", "content": user_message})
+        if isinstance(msg["content"], list):
+            # Reconstruct multi-content messages (text only for history)
+            text_parts = [p["text"] for p in msg["content"] if p.get("type") == "text"]
+            has_image = any(p.get("type") == "image" for p in msg["content"])
+            text = " ".join(text_parts)
+            if has_image:
+                text = "[Bild gesendet] " + text
+            messages.append({"role": msg["role"], "content": text})
+        else:
+            messages.append({"role": msg["role"], "content": msg["content"]})
+
+    # Build current message content
+    if image and image.get("data"):
+        content = [
+            {
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": image.get("media_type", "image/jpeg"),
+                    "data": image["data"],
+                },
+            },
+            {"type": "text", "text": user_message},
+        ]
+        messages.append({"role": "user", "content": content})
+    else:
+        messages.append({"role": "user", "content": user_message})
 
     try:
         response = client.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=1024,
+            max_tokens=2048,
             system=system_prompt,
             messages=messages,
         )

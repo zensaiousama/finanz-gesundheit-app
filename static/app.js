@@ -15,10 +15,16 @@
     const sidebarOverlay = document.getElementById("sidebarOverlay");
     const sidebarClose = document.getElementById("sidebarClose");
     const chatList = document.getElementById("chatList");
+    const attachBtn = document.getElementById("attachBtn");
+    const imageInput = document.getElementById("imageInput");
+    const imagePreview = document.getElementById("imagePreview");
+    const imagePreviewImg = document.getElementById("imagePreviewImg");
+    const imagePreviewRemove = document.getElementById("imagePreviewRemove");
 
     let currentMode = "finance";
     let currentChatId = null;
     let currentMessages = [];
+    let pendingImage = null; // {data: base64, media_type: "image/...", dataUrl: "data:..."}
 
     // --- Storage ---
     const STORAGE_KEY = "berater_chats";
@@ -42,14 +48,31 @@
 
         const chats = loadAllChats();
         const firstUserMsg = currentMessages.find(m => m.role === "user");
-        const title = firstUserMsg ? firstUserMsg.content.slice(0, 60) : "Neuer Chat";
+        let title = "Neuer Chat";
+        if (firstUserMsg) {
+            title = typeof firstUserMsg.content === "string"
+                ? firstUserMsg.content.slice(0, 60)
+                : (firstUserMsg.content.find(p => p.type === "text")?.text || "Bild").slice(0, 60);
+        }
+
+        // Strip base64 image data from saved messages to avoid localStorage bloat
+        const savedMessages = currentMessages.map(msg => {
+            if (typeof msg.content === "string") return msg;
+            return {
+                ...msg,
+                content: msg.content.map(p => {
+                    if (p.type === "image") return { type: "image", placeholder: true };
+                    return p;
+                }),
+            };
+        });
 
         const existing = chats.findIndex(c => c.id === currentChatId);
         const chatData = {
             id: currentChatId,
             mode: currentMode,
             title: title,
-            messages: currentMessages,
+            messages: savedMessages,
             updatedAt: new Date().toISOString(),
         };
 
@@ -232,8 +255,30 @@
 
         if (role === "assistant") {
             bubble.innerHTML = renderMarkdown(content);
-        } else {
+        } else if (typeof content === "string") {
             bubble.textContent = content;
+        } else {
+            // Multi-content (image + text)
+            content.forEach(part => {
+                if (part.type === "image") {
+                    if (part.dataUrl) {
+                        const img = document.createElement("img");
+                        img.src = part.dataUrl;
+                        img.className = "message-image";
+                        bubble.appendChild(img);
+                    } else if (part.placeholder) {
+                        const badge = document.createElement("div");
+                        badge.textContent = "Bild";
+                        badge.style.cssText = "background:var(--surface2);padding:6px 12px;border-radius:8px;font-size:12px;color:var(--text-muted);margin-bottom:6px;display:inline-block;";
+                        bubble.appendChild(badge);
+                    }
+                } else if (part.type === "text" && part.text) {
+                    const p = document.createElement("p");
+                    p.textContent = part.text;
+                    p.style.margin = "0";
+                    bubble.appendChild(p);
+                }
+            });
         }
 
         div.appendChild(bubble);
@@ -321,17 +366,70 @@
         return result;
     }
 
+    // --- Image handling ---
+    attachBtn.addEventListener("click", () => imageInput.click());
+
+    imageInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            alert("Bild ist zu gross (max 5MB).");
+            imageInput.value = "";
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            const dataUrl = reader.result;
+            const base64 = dataUrl.split(",")[1];
+            const media_type = file.type || "image/jpeg";
+
+            pendingImage = { data: base64, media_type, dataUrl };
+            imagePreviewImg.src = dataUrl;
+            imagePreview.style.display = "flex";
+            attachBtn.classList.add("has-image");
+            updateSendButton();
+        };
+        reader.readAsDataURL(file);
+        imageInput.value = "";
+    });
+
+    imagePreviewRemove.addEventListener("click", () => {
+        pendingImage = null;
+        imagePreview.style.display = "none";
+        attachBtn.classList.remove("has-image");
+        updateSendButton();
+    });
+
     // --- Send message ---
     async function sendMessage() {
         const text = messageInput.value.trim();
-        if (!text) return;
+        if (!text && !pendingImage) return;
+
+        const msgText = text || (pendingImage ? "Bitte analysiere dieses Bild." : "");
+        const image = pendingImage;
 
         messageInput.value = "";
         messageInput.style.height = "auto";
+        pendingImage = null;
+        imagePreview.style.display = "none";
+        attachBtn.classList.remove("has-image");
         sendBtn.disabled = true;
 
-        currentMessages.push({ role: "user", content: text });
-        appendMessage("user", text);
+        // Build message content
+        let msgContent;
+        if (image) {
+            msgContent = [
+                { type: "image", dataUrl: image.dataUrl, data: image.data, media_type: image.media_type },
+                { type: "text", text: msgText },
+            ];
+        } else {
+            msgContent = msgText;
+        }
+
+        currentMessages.push({ role: "user", content: msgContent });
+        appendMessage("user", msgContent);
 
         // Auto-save after user sends
         saveCurrentChat();
@@ -339,14 +437,25 @@
         showTyping();
 
         try {
+            const payload = {
+                message: msgText,
+                mode: currentMode,
+                history: currentMessages.slice(0, -1).map(m => {
+                    if (typeof m.content === "string") return m;
+                    return { ...m, content: m.content.map(p => {
+                        if (p.type === "image") return { type: "image" };
+                        return { type: "text", text: p.text };
+                    })};
+                }),
+            };
+            if (image) {
+                payload.image = { data: image.data, media_type: image.media_type };
+            }
+
             const res = await fetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    message: text,
-                    mode: currentMode,
-                    history: currentMessages.slice(0, -1),
-                }),
+                body: JSON.stringify(payload),
             });
 
             hideTyping();
@@ -373,7 +482,7 @@
 
     // --- Input handling ---
     function updateSendButton() {
-        sendBtn.disabled = messageInput.value.trim().length === 0;
+        sendBtn.disabled = messageInput.value.trim().length === 0 && !pendingImage;
     }
 
     messageInput.addEventListener("input", () => {

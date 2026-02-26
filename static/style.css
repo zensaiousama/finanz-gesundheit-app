@@ -355,17 +355,78 @@ body {
     border-top: 1px solid var(--surface2);
 }
 
+/* Image preview */
+.image-preview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px 0;
+    position: relative;
+}
+.image-preview img {
+    max-height: 120px;
+    max-width: 200px;
+    border-radius: 10px;
+    border: 1px solid var(--surface2);
+    object-fit: cover;
+}
+.image-preview-remove {
+    position: absolute;
+    top: 4px;
+    right: 12px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+.image-preview-remove:hover { background: #ef4444; }
+
+/* Attach button */
+.attach-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s, background 0.2s;
+    flex-shrink: 0;
+}
+.attach-btn:hover { color: var(--accent); background: var(--accent-glow); }
+.attach-btn.has-image { color: var(--accent); }
+
 .input-wrapper {
     display: flex;
     align-items: flex-end;
-    gap: 8px;
+    gap: 4px;
     background: var(--bg);
     border-radius: 12px;
     border: 1px solid var(--surface2);
-    padding: 4px 4px 4px 16px;
+    padding: 4px 4px 4px 4px;
     transition: border-color 0.2s;
 }
 .input-wrapper:focus-within { border-color: var(--accent); }
+
+/* Image in chat messages */
+.message-image {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    object-fit: contain;
+}
 
 textarea {
     flex: 1;
